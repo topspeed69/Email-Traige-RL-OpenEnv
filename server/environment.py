@@ -160,6 +160,17 @@ class EmailTriageEnv:
             dep_penalty = -1.0
             self.dependency_violations += 1
         
+        # New: Cross-email dependency check
+        if email.depends_on:
+            for dep_id in email.depends_on:
+                dep_email = self._get_email(dep_id)
+                dep_prog = self.progress.get(dep_id)
+                
+                # If dependency not processed or incorrectly classified
+                if not dep_prog or not dep_prog.category or dep_prog.category != dep_email.true_category:
+                    dep_penalty -= 0.5
+                    self.dependency_violations += 1
+        
         # Category accuracy
         CATEGORY_WEIGHTS = {
             EmailCategory.URGENT_ESCALATION: 3.0,
@@ -248,6 +259,15 @@ class EmailTriageEnv:
         else:
             route_reward = -0.5
         
+        # Dependency check (again, to ensure terminal state respect dependencies)
+        dep_penalty = 0.0
+        if email.depends_on:
+            for dep_id in email.depends_on:
+                dep_prog = self.progress.get(dep_id)
+                if not dep_prog or not dep_prog.is_done:
+                    dep_penalty -= 0.5
+                    self.dependency_violations += 1
+        
         # SLA check
         sla_penalty = self._check_sla(email)
         
@@ -259,11 +279,11 @@ class EmailTriageEnv:
         prog.disposition = EmailDisposition.ROUTED
         prog.disposition_step = self.current_step
         
-        total = route_reward + sla_penalty + (-0.02) + completion_bonus
+        total = route_reward + sla_penalty + (-0.02) + completion_bonus + dep_penalty
         return Reward(
             total=total, category_correct=0, priority_correct=0,
             routing_correct=route_reward, sla_penalty=sla_penalty,
-            action_cost=-0.02, dependency_violation=0,
+            action_cost=-0.02, dependency_violation=dep_penalty,
             completion_bonus=completion_bonus
         ), None
     
@@ -286,17 +306,26 @@ class EmailTriageEnv:
         else:
             route_reward = -1.0  # Shouldn't archive actionable emails
         
+        # Dependency check
+        dep_penalty = 0.0
+        if email.depends_on:
+            for dep_id in email.depends_on:
+                dep_prog = self.progress.get(dep_id)
+                if not dep_prog or not dep_prog.is_done:
+                    dep_penalty -= 0.5
+                    self.dependency_violations += 1
+        
         sla_penalty = self._check_sla(email)
         completion_bonus = self._completion_bonus(email)
         
         prog.disposition = EmailDisposition.ARCHIVED
         prog.disposition_step = self.current_step
         
-        total = route_reward + sla_penalty + (-0.01) + completion_bonus
+        total = route_reward + sla_penalty + (-0.01) + completion_bonus + dep_penalty
         return Reward(
             total=total, category_correct=0, priority_correct=0,
             routing_correct=route_reward, sla_penalty=sla_penalty,
-            action_cost=-0.01, dependency_violation=0,
+            action_cost=-0.01, dependency_violation=dep_penalty,
             completion_bonus=completion_bonus
         ), None
     
@@ -319,17 +348,26 @@ class EmailTriageEnv:
         else:
             route_reward = -1.5  # Unnecessary escalation is costly
         
+        # Dependency check
+        dep_penalty = 0.0
+        if email.depends_on:
+            for dep_id in email.depends_on:
+                dep_prog = self.progress.get(dep_id)
+                if not dep_prog or not dep_prog.is_done:
+                    dep_penalty -= 0.5
+                    self.dependency_violations += 1
+        
         sla_penalty = self._check_sla(email)
         completion_bonus = self._completion_bonus(email)
         
         prog.disposition = EmailDisposition.ESCALATED
         prog.disposition_step = self.current_step
         
-        total = route_reward + sla_penalty + (-0.5) + completion_bonus
+        total = route_reward + sla_penalty + (-0.5) + completion_bonus + dep_penalty
         return Reward(
             total=total, category_correct=0, priority_correct=0,
             routing_correct=route_reward, sla_penalty=sla_penalty,
-            action_cost=-0.5, dependency_violation=0,
+            action_cost=-0.5, dependency_violation=dep_penalty,
             completion_bonus=completion_bonus
         ), None
     
@@ -409,6 +447,8 @@ class EmailTriageEnv:
                 "sender": email.sender,
                 "body": email.body,
                 "thread_id": email.thread_id,
+                "thread_context": email.thread_context if (email.thread_id in self.threads_read) else None,
+                "depends_on": email.depends_on,
                 "arrival_step": email.arrival_step,
                 "thread_read": (email.thread_id in self.threads_read) if email.thread_id else None,
             }

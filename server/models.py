@@ -27,6 +27,8 @@ class Email(BaseModel):
     arrival_step: int
     thread_id: Optional[str] = None
     parent_email_id: Optional[str] = None
+    depends_on: List[str] = []  # List of email IDs this one depends on
+    thread_context: Optional[str] = None  # Hidden context revealed after read_thread
     # Ground truth (hidden from agent)
     true_category: EmailCategory
     true_priority: Literal["high", "medium", "low"]
