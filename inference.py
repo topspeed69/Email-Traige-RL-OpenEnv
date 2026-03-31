@@ -1,6 +1,8 @@
 import os
 import json
+import re
 import requests
+import argparse
 from dotenv import load_dotenv
 from openai import OpenAI
 
@@ -24,11 +26,11 @@ SYSTEM_PROMPT = """You are an email triage AI. You make ONE atomic action per st
 
 Available action types:
   - read_thread   : Read thread context (required before classifying threaded emails)
-  - classify      : Set category ONLY.  Categories: spam, billing_issue, technical_support, meeting_request, sales_inquiry, urgent_escalation, general_info, internal
-  - set_priority  : Set priority ONLY.   Priorities: high, medium, low
-  - route         : Route to a team.     Teams: engineering, finance, sales, support
-  - archive       : Archive the email.   Best for spam/general_info
-  - escalate      : Escalate the email.  Best for urgent_escalation
+  - classify      : Set category ONLY. Categories: spam, billing_issue, technical_support, meeting_request, sales_inquiry, urgent_escalation, general_info, internal
+  - set_priority  : Set priority ONLY. Priorities: high, medium, low
+  - route         : Route to a team. Teams EXACTLY ONE OF: engineering, finance, sales, support (DO NOT use "general")
+  - archive       : Archive the email. Best for spam/general_info
+  - escalate      : Escalate the email. Best for urgent_escalation
   - skip          : Do nothing this step
 
 Workflow per email:
@@ -36,6 +38,11 @@ Workflow per email:
   2. classify with a category
   3. set_priority
   4. route / archive / escalate (terminal)
+
+CRITICAL RULES:
+- If a thread is marked READ, DO NOT read_thread again. Move on to classify.
+- In-Progress emails need missing fields filled (Priority, Category) and then a terminal action.
+- Do NOT repeat the exact same action if it was just done.
 
 Respond ONLY with valid JSON for ONE action. Examples:
 
@@ -108,7 +115,7 @@ def _decide_next_action_heuristic(obs):
     return {"action_type": "skip", "email_id": "none"}
 
 
-def run_task(task_id: str) -> float:
+def run_task(task_id: str, verbose: bool = False) -> float:
     """Run inference on one task"""
     print(f"\n{'='*50}")
     print(f"Running task: {task_id}")
@@ -127,6 +134,7 @@ def run_task(task_id: str) -> float:
     truncated = False
     step_count = 0
     final_score = 0.0
+    action_history = []
     
     while not (done or truncated):
         step_count += 1
@@ -137,13 +145,16 @@ def run_task(task_id: str) -> float:
             f"From: {e['sender']}\n"
             f"Subject: {e['subject']}\n"
             f"Body: {e['body'][:150]}...\n"
-            f"Thread: {e.get('thread_id', 'none')}"
+            + (f"Thread Context: {e.get('thread_context')[:200]}...\n" if e.get('thread_context') else "")
+            + f"Thread: {e.get('thread_id', 'none')}"
             + (f" (thread {'READ' if e.get('thread_read') else 'UNREAD — must read_thread first'})" if e.get('thread_id') else "")
             for e in obs['inbox'][:5]
         ])
         
         in_progress_text = "\n\n".join([
             f"In-Progress [ID: {e['id']}]\n"
+            f"Subject: {e.get('subject', '')}\n"
+            f"Body/Thread Context: {e.get('body', '')[:50]}... {e.get('thread_context', '')[:50]}\n"
             f"Category: {e.get('category_set', 'NOT SET')}\n"
             f"Priority: {'SET' if e.get('priority_set') else 'NOT SET'}\n"
             f"Disposition: {e.get('disposition', 'PENDING')}"
@@ -158,6 +169,9 @@ In-Progress ({len(obs.get('in_progress', []))} emails):
 
 {in_progress_text}
 
+Recent Actions:
+{', '.join(action_history[-3:]) if action_history else 'None'}
+
 Step {obs['current_step']}/{obs['max_steps']}
 Fully processed: {obs['processed_count']}
 SLA violations: {obs['sla_violations']}
@@ -165,26 +179,35 @@ SLA violations: {obs['sla_violations']}
 Choose ONE action (JSON only):"""
         
         # Call LLM
+        used_method = "Unknown"
         try:
             if 'client' in globals():
+                used_method = "LLM"
                 completion = client.chat.completions.create(
                     model=MODEL_NAME,
                     messages=[
                         {"role": "user", "content": f"{SYSTEM_PROMPT}\n\n{user_prompt}"}
                     ],
                     temperature=0.3,
-                    max_tokens=200
+                    max_tokens=200,
+                    #timeout=5.5  # Strict timeout limit to ensure <20m total runtime
                 )
                 
-                response_text = completion.choices[0].message.content
-                response_text = response_text.replace("```json", "").replace("```", "").strip()
-                action = json.loads(response_text)
+                response_text = completion.choices[0].message.content.strip()
+                # Try to extract just the valid JSON dictionary if LLM adds padding
+                match = re.search(r'\{.*?\}', response_text, re.DOTALL)
+                if match:
+                    action = json.loads(match.group(0))
+                else:
+                    action = json.loads(response_text)
             else:
+                used_method = "Heuristic (no client)"
                 # Deterministic heuristic fallback
                 action = _decide_next_action_heuristic(obs)
             
         except Exception as e:
             print(f"LLM error: {e}")
+            used_method = "Heuristic (fallback due to error)"
             action = _decide_next_action_heuristic(obs)
         
         # Execute step
@@ -192,6 +215,7 @@ Choose ONE action (JSON only):"""
         
         if resp.status_code != 200:
             print(f"Action rejected (Status {resp.status_code}): {resp.text}")
+            used_method = "Heuristic (fallback due to rejection)"
             action = _decide_next_action_heuristic(obs)
             resp = requests.post(f"{ENV_URL}/step", json=action)
 
@@ -202,7 +226,14 @@ Choose ONE action (JSON only):"""
         done = result['done']
         truncated = result['truncated']
         
-        print(f"Step {step_count}: {action['action_type']:15s} on {action.get('email_id', 'N/A'):12s} -> reward: {reward:+.2f}")
+        action_history.append(f"{action.get('action_type', 'unknown')} on {action.get('email_id', 'N/A')}")
+        if len(action_history) > 3:
+            action_history.pop(0)
+        
+        log_msg = f"Step {step_count}: {action['action_type']:15s} on {action.get('email_id', 'N/A'):12s} -> reward: {reward:+.2f}"
+        if verbose:
+            log_msg += f" [{used_method}]"
+        print(log_msg)
         
         if step_count > 500:  # Safety break (higher due to multi-step)
             break
@@ -215,9 +246,13 @@ Choose ONE action (JSON only):"""
     return final_score
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description="Run email triage inference")
+    parser.add_argument("--verbose", action="store_true", help="Print verbose logs, including whether LLM or Heuristic is used")
+    args = parser.parse_args()
+
     scores = {}
     for task in ["easy", "medium", "hard"]:
-        scores[task] = run_task(task)
+        scores[task] = run_task(task, verbose=args.verbose)
     
     print("\n" + "="*50)
     print("BASELINE RESULTS")

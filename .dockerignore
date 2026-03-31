@@ -1,0 +1,6 @@
+.venv
+.git
+__pycache__
+*.pyc
+.pytest_cache
+email_triage_env.egg-info
