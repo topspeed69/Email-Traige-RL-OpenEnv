@@ -2,7 +2,8 @@ TASK_CONFIGS = {
     "easy": {
         "name": "Basic Email Classification",
         "num_emails": 15,
-        "max_steps": 20,
+        # 3 steps per email (classify + set_priority + archive/route) => 45 min
+        "max_steps": 50,
         "categories": ["spam", "billing_issue", "technical_support", "general_info"],
         "has_dependencies": False,
         "has_sla": False,
@@ -11,7 +12,8 @@ TASK_CONFIGS = {
     "medium": {
         "name": "Priority-Aware Triage",
         "num_emails": 25,
-        "max_steps": 40,
+        # 3-4 steps per email => 75-100
+        "max_steps": 100,
         "categories": "all",
         "has_dependencies": False,
         "has_sla": True,
@@ -20,7 +22,8 @@ TASK_CONFIGS = {
     "hard": {
         "name": "Full Inbox Management",
         "num_emails": 30,
-        "max_steps": 50,
+        # 4 steps per email (read_thread + classify + set_priority + route/escalate) => 120
+        "max_steps": 130,
         "categories": "all",
         "has_dependencies": True,
         "has_sla": True,

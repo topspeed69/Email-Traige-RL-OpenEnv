@@ -33,6 +33,44 @@ The agent produces an Action containing the following fields:
 - `priority` (string, optional): The priority assignment (`high`, `medium`, `low`).
 - `team` (string, optional): Target team routing (`engineering`, `finance`, `sales`, `support`).
 
+## Reward and Penalty Calculations
+The environment provides dense, step-by-step rewards based on multiple components. The total reward for taking an action is the sum of the following factors:
+
+### 1. Accuracy Bonuses & Penalties
+- **Category Match:** Rewards vary by the true category's importance.
+  - `urgent_escalation`: +3.0
+  - `billing_issue`: +2.5
+  - `technical_support`: +2.0
+  - `meeting_request`: +1.5
+  - `sales_inquiry`: +1.0
+  - `general_info`: +0.8
+  - `internal`: +0.8
+  - `spam`: +0.5
+  - *Incorrect Category Penalty:* -1.0
+- **Priority Match:** Correct (+1.0) / Incorrect (-0.3)
+- **Routing Match:** Correct (+1.0) / Incorrect (-0.5)
+
+### 2. SLA & Dependency Penalties
+- **SLA Penalty (-2.0):** Applied if an email isn't processed within its Service Level Agreement timeframe:
+  - `urgent_escalation`: SLA limit is 10 steps.
+  - `billing_issue`: SLA limit is 15 steps.
+- **Dependency Violation (-1.0):** Applied if the agent classifies an email containing a `thread_id` without checking the thread context first.
+
+### 3. Action Costs
+Every API/Tool action inherently costs resources (simulating API latency or compute cost):
+- `classify`: -0.02
+- `route`: -0.02
+- `archive`: -0.01
+- `read_thread`: -0.01
+- `escalate`: -0.50
+- `skip`: 0.00
+- *Invalid Actions:* default -0.05
+
+### 4. Wait Decay (Time Penalty)
+Every step that urgent emails remain sitting unprocessed in the inbox applies a cumulative penalty:
+- `urgent_escalation`: -0.15 per step
+- `billing_issue`: -0.10 per step
+
 ## Tasks and Difficulty
 We offer 3 standardized tasks evaluated by objective agent-graders:
 

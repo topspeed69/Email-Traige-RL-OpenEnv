@@ -491,6 +491,7 @@ dependencies = [
     { name = "fastapi" },
     { name = "openenv-core" },
     { name = "pydantic" },
+    { name = "python-dotenv" },
     { name = "scikit-learn" },
     { name = "uvicorn" },
 ]
@@ -500,6 +501,7 @@ requires-dist = [
     { name = "fastapi" },
     { name = "openenv-core" },
     { name = "pydantic" },
+    { name = "python-dotenv", specifier = ">=1.2.2" },
     { name = "scikit-learn" },
     { name = "uvicorn" },
 ]
