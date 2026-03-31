@@ -52,9 +52,13 @@ def _decide_next_action_heuristic(obs):
     # Priority 1: Advance in-progress emails to completion
     for ep in obs.get("in_progress", []):
         eid = ep["id"]
+        text = (ep.get("subject", "") + " " + ep.get("body", "") + " " + str(ep.get("thread_context", ""))).lower()
+        
         if not ep.get("priority_set"):
             # Needs priority
-            return {"action_type": "set_priority", "email_id": eid, "priority": "medium"}
+            priority = "high" if "asap" in text or "urgent" in text else "medium"
+            return {"action_type": "set_priority", "email_id": eid, "priority": priority}
+            
         # Has category + priority, needs terminal action
         cat = ep.get("category_set", "")
         if cat in ("spam", "general_info"):
@@ -78,10 +82,28 @@ def _decide_next_action_heuristic(obs):
     if inbox:
         e = inbox[0]
         eid = e["id"]
+        
         # If threaded and thread NOT yet read, read it first
         if e.get("thread_id") and not e.get("thread_read"):
             return {"action_type": "read_thread", "email_id": eid}
-        return {"action_type": "classify", "email_id": eid, "category": "general_info"}
+            
+        text = (e.get("subject", "") + " " + e.get("body", "") + " " + str(e.get("thread_context", ""))).lower()
+        
+        # Simple heuristics for category
+        if "invoice" in text or "billing" in text or "charge" in text or "refund" in text or "payment" in text:
+            category = "billing_issue"
+        elif "asap" in text or "urgent" in text:
+            category = "urgent_escalation"
+        elif "crash" in text or "error" in text or "failing" in text or "bug" in text:
+            category = "technical_support"
+        elif "meeting" in text or "sync" in text or "call" in text:
+            category = "meeting_request"
+        elif "quote" in text or "pricing" in text or "sales" in text or "enterprise" in text:
+            category = "sales_inquiry"
+        else:
+            category = "general_info"
+            
+        return {"action_type": "classify", "email_id": eid, "category": category}
     
     return {"action_type": "skip", "email_id": "none"}
 
