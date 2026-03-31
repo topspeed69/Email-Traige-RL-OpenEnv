@@ -1,0 +1,734 @@
+{
+  "easy": [
+    {
+      "id": "email_e01",
+      "subject": "You won a new iPhone!",
+      "sender": "promotions@deal-hunter-daily.net",
+      "body": "Click here to claim your free iPhone 15 Pro Max. Offer expires in 2 hours!",
+      "arrival_step": 0,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_e02",
+      "subject": "Question about my recent invoice",
+      "sender": "m.robinson@nexus-retail.com",
+      "body": "I noticed an extra $50 charge on my last invoice. Can someone explain what this is for?",
+      "arrival_step": 1,
+      "true_category": "billing_issue",
+      "true_priority": "medium",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_e03",
+      "subject": "Cannot reset password",
+      "sender": "david.chen88@gmail.com",
+      "body": "I am trying to reset my account password but the link is broken. Please help.",
+      "arrival_step": 2,
+      "true_category": "technical_support",
+      "true_priority": "medium",
+      "true_team": "support"
+    },
+    {
+      "id": "email_e04",
+      "subject": "Hours of operation?",
+      "sender": "samantha_jones_92@yahoo.com",
+      "body": "Are you guys open on national holidays? I couldn't find this info on the website.",
+      "arrival_step": 2,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_e05",
+      "subject": "Cheap prescriptions online",
+      "sender": "sales@med-discount-pharmacy.biz",
+      "body": "Get your prescriptions at 90% off. No doctor visit required.",
+      "arrival_step": 3,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_e06",
+      "subject": "Credit card expired",
+      "sender": "ap@vertex-solutions.co",
+      "body": "My card on file expired and my subscription was paused. How do I update my payment method?",
+      "arrival_step": 4,
+      "true_category": "billing_issue",
+      "true_priority": "high",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_e07",
+      "subject": "App keeps crashing on Android",
+      "sender": "chris.miller@outlook.com",
+      "body": "Ever since the last update, the app crashes immediately upon opening. I am using a Galaxy S22.",
+      "arrival_step": 5,
+      "true_category": "technical_support",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_e08",
+      "subject": "Do you offer student discounts?",
+      "sender": "j.parker@nyu.edu",
+      "body": "I am currently enrolled in university. Is there a student discount available for your pro plan?",
+      "arrival_step": 6,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_e09",
+      "subject": "Enlarge your business potential",
+      "sender": "seo-expert@rank-boosters-pro.io",
+      "body": "We guarantee to put you on page 1 of Google in 24 hours. Reply for details.",
+      "arrival_step": 7,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_e10",
+      "subject": "Double billed this month",
+      "sender": "finance@lumina-studios.com",
+      "body": "I checked my statement and I was charged twice for the monthly service fee. Please refund the duplicate.",
+      "arrival_step": 8,
+      "true_category": "billing_issue",
+      "true_priority": "high",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_e11",
+      "subject": "API rate limit error",
+      "sender": "engineering@forge-partners.dev",
+      "body": "We are getting a 429 Too Many Requests error on the v2 API endpoint despite being well under our quota.",
+      "arrival_step": 8,
+      "true_category": "technical_support",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_e12",
+      "subject": "Where is the documentation?",
+      "sender": "alex.h@protonmail.com",
+      "body": "I can't seem to find the integration guide for the new dashboard. Can someone send a link?",
+      "arrival_step": 9,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_e13",
+      "subject": "Hot singles in your area",
+      "sender": "matches@local-dating-alerts.com",
+      "body": "Meet someone tonight! Click here to see profiles near you.",
+      "arrival_step": 9,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_e14",
+      "subject": "Need invoice for tax purposes",
+      "sender": "accounting@horizon-logistics.com",
+      "body": "Please provide a PDF copy of our October invoice. We need it for tax filing.",
+      "arrival_step": 10,
+      "true_category": "billing_issue",
+      "true_priority": "medium",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_e15",
+      "subject": "Syncing is stuck",
+      "sender": "t.baker@icloud.com",
+      "body": "The desktop client has been saying 'Syncing... 99%' for the past three hours.",
+      "arrival_step": 10,
+      "true_category": "technical_support",
+      "true_priority": "medium",
+      "true_team": "engineering"
+    }
+  ],
+  "medium": [
+    {
+      "id": "email_m01",
+      "subject": "URGENT: Production Database DOWN",
+      "sender": "infrastructure@apex-manufacturing.com",
+      "body": "Our main database went offline 5 minutes ago and we are losing revenue. We need immediate assistance!",
+      "arrival_step": 0,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_m02",
+      "subject": "URGENT: Account suspended erroneously",
+      "sender": "cfo@nimbus-health.com",
+      "body": "Our enterprise account was just suspended for non-payment, but we paid our bill last week. Fix this immediately.",
+      "arrival_step": 0,
+      "true_category": "billing_issue",
+      "true_priority": "high",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_m03",
+      "subject": "Sync up this Friday?",
+      "sender": "p.smith@altus-wealth.com",
+      "body": "Can we schedule a quick 15-minute call this Friday to discuss the upcoming Q3 campaign?",
+      "arrival_step": 1,
+      "true_category": "meeting_request",
+      "true_priority": "medium",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_m04",
+      "subject": "Interested in Enterprise pricing",
+      "sender": "procurement@globex-enterprises.com",
+      "body": "We are looking to roll out your software to 5,000 employees. Could we get a quote for an enterprise license?",
+      "arrival_step": 2,
+      "true_category": "sales_inquiry",
+      "true_priority": "high",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_m05",
+      "subject": "Q2 All-Hands Recording",
+      "sender": "hr-updates@acumen.io",
+      "body": "For those who missed yesterday's all-hands meeting, the recording is now available on the intranet.",
+      "arrival_step": 2,
+      "true_category": "internal",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m06",
+      "subject": "Security Breach Suspected - ESCALATE",
+      "sender": "security-alerts@cloud-guard.net",
+      "body": "We detected unauthorized access originating from your service's IP addresses. We need a security engineer on a call right now.",
+      "arrival_step": 3,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_m07",
+      "subject": "Do you support French?",
+      "sender": "marie.dubois@orange.fr",
+      "body": "I am wondering if your platform has a French language localization option available.",
+      "arrival_step": 4,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m08",
+      "subject": "Bitcoin investment opportunity!",
+      "sender": "newsletter@crypto-insights-weekly.com",
+      "body": "Double your money in 24 hours with our guaranteed trading bots. Click here to deposit.",
+      "arrival_step": 5,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m09",
+      "subject": "Export feature failing",
+      "sender": "data-team@quant-analytics.com",
+      "body": "Whenever I try to export the weekly report to CSV, it generates an empty file.",
+      "arrival_step": 6,
+      "true_category": "technical_support",
+      "true_priority": "medium",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_m10",
+      "subject": "Wrong billing address on invoice",
+      "sender": "invoices@retail-ops.co",
+      "body": "Our latest invoice shows our old address. Can you update it to the new one in Chicago and reissue?",
+      "arrival_step": 7,
+      "true_category": "billing_issue",
+      "true_priority": "medium",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_m11",
+      "subject": "Can we get a demo?",
+      "sender": "founder@stealth-startup.io",
+      "body": "I saw your product on ProductHunt and I'd love a personalized demo for my team of 10.",
+      "arrival_step": 8,
+      "true_category": "sales_inquiry",
+      "true_priority": "medium",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_m12",
+      "subject": "Reminder: Complete your compliance training",
+      "sender": "compliance@acumen.io",
+      "body": "This is a reminder that the annual security compliance training is due by the end of the week.",
+      "arrival_step": 9,
+      "true_category": "internal",
+      "true_priority": "medium",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m13",
+      "subject": "URGENT: Incorrect funds transferred",
+      "sender": "treasury@national-bank-partners.com",
+      "body": "The latest batch transfer was off by $100,000. Stop all processing immediately until we resolve this.",
+      "arrival_step": 10,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_m14",
+      "subject": "Is there a free trial?",
+      "sender": "k.lee44@berkeley.edu",
+      "body": "I want to try your software for a class project. Do you offer a 14-day free trial?",
+      "arrival_step": 11,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_m15",
+      "subject": "Your package is waiting",
+      "sender": "tracking-updates@parcel-delivery-notice.com",
+      "body": "We missed you! Pay the $2.99 redelivery fee here or your package will be destroyed.",
+      "arrival_step": 12,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m16",
+      "subject": "SSO integration broken",
+      "sender": "it-admin@synergy-corp.net",
+      "body": "Our SAML SSO integration started throwing a 500 error this morning. Users cannot log in.",
+      "arrival_step": 13,
+      "true_category": "technical_support",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_m17",
+      "subject": "Receipt request",
+      "sender": "josh.freelance@gmail.com",
+      "body": "Could you send me a receipt for the payment I made yesterday? Just need it for my records.",
+      "arrival_step": 14,
+      "true_category": "billing_issue",
+      "true_priority": "low",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_m18",
+      "subject": "Add more seats to our plan",
+      "sender": "creative-director@pixel-perfect.agency",
+      "body": "We just hired 5 new designers. How do we go about adding them to our current team plan?",
+      "arrival_step": 15,
+      "true_category": "sales_inquiry",
+      "true_priority": "medium",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_m19",
+      "subject": "Office fridge cleaning this Friday",
+      "sender": "facilities@acumen.io",
+      "body": "Please remove all personal items from the 3rd floor fridge by 4 PM on Friday. Anything left will be thrown away.",
+      "arrival_step": 16,
+      "true_category": "internal",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m20",
+      "subject": "Reschedule our kick-off?",
+      "sender": "r.davis@stratton-oakmont.com",
+      "body": "I have a conflict for tomorrow's kick-off call. Can we move it to Thursday at 2 PM?",
+      "arrival_step": 17,
+      "true_category": "meeting_request",
+      "true_priority": "medium",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_m21",
+      "subject": "URGENT: Legal request for data hold",
+      "sender": "legal-requests@pearson-specter.com",
+      "body": "Attached is a court order requiring an immediate freeze on data deletion for account ID #88921. Escalate to your legal/compliance team immediately.",
+      "arrival_step": 18,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m22",
+      "subject": "What are the specs?",
+      "sender": "buyer@tech-hardware-supply.com",
+      "body": "Where can I find the detailed hardware specifications for the v3 routers?",
+      "arrival_step": 19,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m23",
+      "subject": "You have a new secure message",
+      "sender": "no-reply@secure-message-portal.net",
+      "body": "Click the link to view your secure encrypted document. Login required.",
+      "arrival_step": 19,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_m24",
+      "subject": "Latency spikes in US-East",
+      "sender": "pagerduty@acumen.io",
+      "body": "Automated alert: P99 latency in US-East region has exceeded 500ms for the last 15 minutes.",
+      "arrival_step": 20,
+      "true_category": "technical_support",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_m25",
+      "subject": "Lunch with the CEO next week",
+      "sender": "executive-assistant@acumen.io",
+      "body": "Are you available next Tuesday for a quick lunch to discuss the Q4 roadmap?",
+      "arrival_step": 20,
+      "true_category": "meeting_request",
+      "true_priority": "medium",
+      "true_team": "engineering"
+    }
+  ],
+  "hard": [
+    {
+      "id": "email_h01",
+      "subject": "Something is wrong with my account",
+      "sender": "b.wilson89@gmail.com",
+      "body": "Hi, I logged in today and things look weird. Can someone help?",
+      "arrival_step": 0,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "support",
+      "thread_id": "thread_A"
+    },
+    {
+      "id": "email_h02",
+      "subject": "Re: Something is wrong with my account",
+      "sender": "b.wilson89@gmail.com",
+      "body": "Just to clarify, all my dashboard widgets are throwing a '500 Server Error' when they try to load data.",
+      "arrival_step": 2,
+      "true_category": "technical_support",
+      "true_priority": "medium",
+      "true_team": "engineering",
+      "thread_id": "thread_A",
+      "parent_email_id": "email_h01"
+    },
+    {
+      "id": "email_h03",
+      "subject": "Re: Something is wrong with my account",
+      "sender": "b.wilson89@gmail.com",
+      "body": "Now it's completely down and our entire company can't work. This needs to be escalated immediately!",
+      "arrival_step": 4,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "engineering",
+      "thread_id": "thread_A",
+      "parent_email_id": "email_h02"
+    },
+    {
+      "id": "email_h04",
+      "subject": "Question about pricing",
+      "sender": "mark.davis@target-retail.com",
+      "body": "I saw your pricing page, but I am not sure which tier fits us. We have 50 users.",
+      "arrival_step": 1,
+      "true_category": "sales_inquiry",
+      "true_priority": "medium",
+      "true_team": "sales",
+      "thread_id": "thread_B"
+    },
+    {
+      "id": "email_h05",
+      "subject": "Re: Question about pricing",
+      "sender": "mark.davis@target-retail.com",
+      "body": "Actually, looking closer, we also need custom SAML integration. Can we get an enterprise quote drafted?",
+      "arrival_step": 3,
+      "true_category": "sales_inquiry",
+      "true_priority": "high",
+      "true_team": "sales",
+      "thread_id": "thread_B",
+      "parent_email_id": "email_h04"
+    },
+    {
+      "id": "email_h06",
+      "subject": "Q3 Planning Offsite",
+      "sender": "vpeng@acumen.io",
+      "body": "Team, we need to finalize the location for the Q3 offsite. Please submit your ideas by EOD.",
+      "arrival_step": 0,
+      "true_category": "internal",
+      "true_priority": "low",
+      "true_team": "support",
+      "thread_id": "thread_C"
+    },
+    {
+      "id": "email_h07",
+      "subject": "Re: Q3 Planning Offsite",
+      "sender": "design-lead@acumen.io",
+      "body": "Can we schedule a 30-min sync tomorrow to go over the top 3 location choices?",
+      "arrival_step": 1,
+      "true_category": "meeting_request",
+      "true_priority": "medium",
+      "true_team": "support",
+      "thread_id": "thread_C",
+      "parent_email_id": "email_h06"
+    },
+    {
+      "id": "email_h08",
+      "subject": "Re: Q3 Planning Offsite",
+      "sender": "vpeng@acumen.io",
+      "body": "Yes, I just sent a calendar invite for 2 PM tomorrow. Let's make a final decision then.",
+      "arrival_step": 5,
+      "true_category": "meeting_request",
+      "true_priority": "low",
+      "true_team": "support",
+      "thread_id": "thread_C",
+      "parent_email_id": "email_h07"
+    },
+    {
+      "id": "email_h09",
+      "subject": "Payment failed?",
+      "sender": "kwilliams@innovate-tech.co",
+      "body": "I got an email saying my payment failed, but I haven't changed my card.",
+      "arrival_step": 2,
+      "true_category": "billing_issue",
+      "true_priority": "medium",
+      "true_team": "finance",
+      "thread_id": "thread_D"
+    },
+    {
+      "id": "email_h10",
+      "subject": "Re: Payment failed?",
+      "sender": "kwilliams@innovate-tech.co",
+      "body": "I figured it out, my bank flagged it as fraud. I cleared it up, please try running the charge again.",
+      "arrival_step": 4,
+      "true_category": "billing_issue",
+      "true_priority": "medium",
+      "true_team": "finance",
+      "thread_id": "thread_D",
+      "parent_email_id": "email_h09"
+    },
+    {
+      "id": "email_h11",
+      "subject": "Bug report: UI glitch on login",
+      "sender": "qa-team@software-testers.net",
+      "body": "The login button overlaps with the footer on mobile screens. Just a minor CSS issue.",
+      "arrival_step": 5,
+      "true_category": "technical_support",
+      "true_priority": "low",
+      "true_team": "engineering",
+      "thread_id": "thread_E"
+    },
+    {
+      "id": "email_h12",
+      "subject": "Re: Bug report: UI glitch on login",
+      "sender": "qa-team@software-testers.net",
+      "body": "Wait, it's not just CSS. Clicking the button actually submits the form multiple times.",
+      "arrival_step": 6,
+      "true_category": "technical_support",
+      "true_priority": "medium",
+      "true_team": "engineering",
+      "thread_id": "thread_E",
+      "parent_email_id": "email_h11"
+    },
+    {
+      "id": "email_h13",
+      "subject": "Re: Bug report: UI glitch on login",
+      "sender": "qa-team@software-testers.net",
+      "body": "This is critical. The multiple submissions are bypassing rate limits and locking users out entirely.",
+      "arrival_step": 7,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "engineering",
+      "thread_id": "thread_E",
+      "parent_email_id": "email_h12"
+    },
+    {
+      "id": "email_h14",
+      "subject": "Re: Bug report: UI glitch on login",
+      "sender": "qa-team@software-testers.net",
+      "body": "Paging anyone! We have thousands of locked-out accounts. This is a P0 incident.",
+      "arrival_step": 8,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "engineering",
+      "thread_id": "thread_E",
+      "parent_email_id": "email_h13"
+    },
+    {
+      "id": "email_h15",
+      "subject": "Who is our account manager?",
+      "sender": "operations@freight-forwarders.com",
+      "body": "Our previous account manager left. Who has taken over our account?",
+      "arrival_step": 0,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "sales",
+      "thread_id": "thread_F"
+    },
+    {
+      "id": "email_h16",
+      "subject": "Re: Who is our account manager?",
+      "sender": "operations@freight-forwarders.com",
+      "body": "Following up on this as we want to discuss upgrading our plan for next quarter.",
+      "arrival_step": 1,
+      "true_category": "sales_inquiry",
+      "true_priority": "medium",
+      "true_team": "sales",
+      "thread_id": "thread_F",
+      "parent_email_id": "email_h15"
+    },
+    {
+      "id": "email_h17",
+      "subject": "Final Notice: Domain Expiry",
+      "sender": "billing@domain-registry-services.com",
+      "body": "Your domain is about to expire. Pay $150 now to avoid losing your website.",
+      "arrival_step": 2,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_h18",
+      "subject": "You have been chosen",
+      "sender": "admin@lotto-international-winners.org",
+      "body": "Claim your inheritance of 4 million dollars. Send your bank details immediately.",
+      "arrival_step": 3,
+      "true_category": "spam",
+      "true_priority": "low",
+      "true_team": "support"
+    },
+    {
+      "id": "email_h19",
+      "subject": "URGENT: Legal Notice of Infringement",
+      "sender": "dmca@copyright-protection-agency.com",
+      "body": "We represent [Client]. You are currently hosting stolen IP. Take it down in 24 hours or face a lawsuit.",
+      "arrival_step": 4,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "support"
+    },
+    {
+      "id": "email_h20",
+      "subject": "CRITICAL: Data Leak Discovered",
+      "sender": "reports@vuln-research.io",
+      "body": "I have found an unsecured S3 bucket belonging to your company containing PII. Please contact me immediately.",
+      "arrival_step": 5,
+      "true_category": "urgent_escalation",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_h21",
+      "subject": "New expense policy",
+      "sender": "finance-admin@acumen.io",
+      "body": "Please review the updated travel and expense policy attached. Meals are now capped at $50/day.",
+      "arrival_step": 6,
+      "true_category": "internal",
+      "true_priority": "medium",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_h22",
+      "subject": "Welcome to the team!",
+      "sender": "onboarding@acumen.io",
+      "body": "Everyone, please welcome our new frontend engineer, Sarah, to the team!",
+      "arrival_step": 7,
+      "true_category": "internal",
+      "true_priority": "low",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_h23",
+      "subject": "Requesting a code review meeting",
+      "sender": "dev-lead@tech-consulting.net",
+      "body": "Can we get the lead engineers in a room tomorrow to review the architecture proposal?",
+      "arrival_step": 8,
+      "true_category": "meeting_request",
+      "true_priority": "medium",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_h24",
+      "subject": "Availability for next week?",
+      "sender": "recruiting@talent-partners.agency",
+      "body": "I have a few great candidates for the open PM role. When are you free to interview them next week?",
+      "arrival_step": 9,
+      "true_category": "meeting_request",
+      "true_priority": "medium",
+      "true_team": "support"
+    },
+    {
+      "id": "email_h25",
+      "subject": "Interested in cross-promotion",
+      "sender": "marketing@growth-saas.io",
+      "body": "We'd love to partner with you for a joint webinar. Who handles your co-marketing efforts?",
+      "arrival_step": 10,
+      "true_category": "sales_inquiry",
+      "true_priority": "low",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_h26",
+      "subject": "RFP Response needed",
+      "sender": "procurement.office@state.gov",
+      "body": "Please find attached the RFP for the new state software initiative. Bids are due by the 15th.",
+      "arrival_step": 11,
+      "true_category": "sales_inquiry",
+      "true_priority": "high",
+      "true_team": "sales"
+    },
+    {
+      "id": "email_h27",
+      "subject": "Wire transfer delayed",
+      "sender": "ar@global-vendors.com",
+      "body": "Our bank is holding the recent wire transfer for compliance checks. Could you provide the SWIFT details again?",
+      "arrival_step": 12,
+      "true_category": "billing_issue",
+      "true_priority": "high",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_h28",
+      "subject": "Can I get a refund?",
+      "sender": "angry.customer2024@yahoo.com",
+      "body": "I forgot to cancel my trial and was charged. I haven't used the product at all. Please refund me.",
+      "arrival_step": 13,
+      "true_category": "billing_issue",
+      "true_priority": "medium",
+      "true_team": "finance"
+    },
+    {
+      "id": "email_h29",
+      "subject": "Webhook delivery failing",
+      "sender": "webhooks@payment-events.io",
+      "body": "We have seen a 100% failure rate delivering webhooks to your endpoint over the last hour.",
+      "arrival_step": 14,
+      "true_category": "technical_support",
+      "true_priority": "high",
+      "true_team": "engineering"
+    },
+    {
+      "id": "email_h30",
+      "subject": "Address for sending a gift?",
+      "sender": "sarah.jenkins@outlook.com",
+      "body": "Your support team was so helpful last week! Where can I send a box of cookies to the team?",
+      "arrival_step": 15,
+      "true_category": "general_info",
+      "true_priority": "low",
+      "true_team": "support"
+    }
+  ]
+}

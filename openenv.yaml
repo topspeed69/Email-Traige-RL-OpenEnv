@@ -1,0 +1,45 @@
+name: email-triage-env
+version: 1.0.0
+description: Email inbox management with multi-category classification, prioritization, and SLA compliance
+author: Your Name
+license: MIT
+
+observation_space:
+  type: Observation
+  properties:
+    inbox:
+      type: array
+      description: List of unprocessed emails
+    processed_count:
+      type: integer
+    current_step:
+      type: integer
+    max_steps:
+      type: integer
+    total_cost:
+      type: number
+    sla_violations:
+      type: integer
+
+action_space:
+  type: Action
+  properties:
+    action_type:
+      type: string
+      enum: [classify, route, archive, escalate, read_thread, skip]
+    email_id:
+      type: string
+    category:
+      type: string
+      enum: [spam, billing_issue, technical_support, meeting_request, sales_inquiry, urgent_escalation, general_info, internal]
+
+tasks:
+  - id: easy
+    name: Basic Email Classification
+    description: Classify 15 emails into categories
+  - id: medium
+    name: Priority-Aware Triage
+    description: Categorize and prioritize 25 emails with SLA
+  - id: hard
+    name: Full Inbox Management
+    description: 30 emails with threading, dependencies, routing
