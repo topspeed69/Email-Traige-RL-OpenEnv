@@ -68,7 +68,7 @@ async def root():
             <div class="container">
                 <span class="success">● System Online</span>
                 <h1>📧 Email Triage RL</h1>
-                <p>Your headless OpenEnv agent sandbox is successfully deployed and ready for API interaction! Run your agent against this cloud deployment locally.</p>
+                <p>Headless OpenEnv agent sandbox is successfully deployed and ready for API interaction! Run your agent against this cloud deployment locally.</p>
                 <div class="code">
                     <span style="color: #64748b;"># Set cloud endpoint</span><br/>
                     export ENV_URL="https://speedbuoy69-email-triage-env.hf.space"<br/><br/>
