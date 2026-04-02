@@ -1,32 +1,23 @@
-# Multi-stage build for Email Triage Environment
-FROM python:3.12-slim AS builder
-
-WORKDIR /app
-COPY . /app/env
-WORKDIR /app/env
-
-# Install uv securely
-RUN pip install uv
-
-# Create virtual environment and install dependencies natively
-RUN uv sync --frozen --no-install-project --no-editable
-
-# Final runtime stage
+# Use Python 3.12-slim as the base image
 FROM python:3.12-slim
 
+# Install uv for fast dependency management
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# Set working directory
 WORKDIR /app
 
-# Copy the virtual environment from builder
-COPY --from=builder /app/env/.venv /app/.venv
+# Copy project files
+COPY . .
 
-# Copy the environment code
-COPY --from=builder /app/env /app/env
-
-# Set PATH to use the virtual environment
+# Set environment variables
+ENV UV_PROJECT_ENVIRONMENT=/app/.venv
 ENV PATH="/app/.venv/bin:$PATH"
+ENV PYTHONPATH="/app:$PYTHONPATH"
 
-# Set PYTHONPATH so imports work correctly
-ENV PYTHONPATH="/app/env:$PYTHONPATH"
+# Synchronize everything (installs dependencies from uv.lock)
+# No-editable ensures it's more production-like
+RUN uv sync --frozen --no-editable
 
-# Run the FastAPI server
-CMD ["sh", "-c", "cd /app/env && uvicorn server.app:app --host 0.0.0.0 --port 8000"]
+# Use the virtualenv's uvicorn module directly
+CMD ["uv", "run", "uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000"]
