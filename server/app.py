@@ -10,7 +10,7 @@ app = FastAPI()
 env = EmailTriageEnv()
 
 @app.post("/reset", response_model=Observation)
-async def reset(task_id: str) -> Observation:
+async def reset(task_id: str = "easy") -> Observation:
     """Reset environment with task"""
     try:
         observation = env.reset(task_id)

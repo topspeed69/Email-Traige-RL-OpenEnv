@@ -1,3 +1,11 @@
+---
+title: Email Triage Env
+emoji: 📧
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 8000
+---
 # EmailTriageEnv
 
 A realistic inbox management system compliant with the OpenEnv architecture.
