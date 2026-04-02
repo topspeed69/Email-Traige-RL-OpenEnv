@@ -1,6 +1,29 @@
-.venv
-.git
-__pycache__
+# Environments and Cache
+.venv/
+.pytest_cache/
+__pycache__/
 *.pyc
-.pytest_cache
-email_triage_env.egg-info
+*.pyo
+*.pyd
+.ipynb_checkpoints/
+
+# Project Metadata
+.git/
+.gitignore
+.dockerignore
+email_triage_env.egg-info/
+
+# Local configuration and secrets
+.env
+.env.example
+
+# Temporary and Output files
+temp_dummy/
+outputs/
+*.log
+
+# Documentation/IDE
+.vscode/
+.idea/
+README.md
+openenv.yaml
