@@ -18,7 +18,7 @@ ENV_URL = "http://localhost:8000"  # FastAPI default port or change to match you
 
 # Check if we should use local LLM API for test
 if not API_KEY and not API_BASE_URL:
-    pass
+    client = None
 else:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
 
@@ -33,25 +33,35 @@ Available action types:
   - escalate      : Escalate the email. Best for urgent_escalation
   - skip          : Do nothing this step
 
-Workflow per email:
+WORKFLOW PER EMAIL (follow this sequence):
   1. (If threaded) read_thread first
   2. classify with a category
   3. set_priority
-  4. route / archive / escalate (terminal)
+  4. route / archive / escalate (terminal action - email is done after this)
 
 CRITICAL RULES:
 - If a thread is marked READ, DO NOT read_thread again. Move on to classify.
 - In-Progress emails need missing fields filled (Priority, Category) and then a terminal action.
 - Do NOT repeat the exact same action if it was just done.
+- NEVER classify an email that already has a category set.
+- NEVER set_priority on an email that already has priority set.
+- Once an email has category + priority, it needs a terminal action (route/archive/escalate).
 
-Respond ONLY with valid JSON for ONE action. Examples:
+Examples of complete sequences:
+- New email: classify -> set_priority -> route
+- Threaded email: read_thread -> classify -> set_priority -> route
+- Spam: classify -> set_priority -> archive
+- Urgent: classify -> set_priority -> escalate
 
+IMPORTANT: Your response MUST be valid JSON. Do not include any text before or after the JSON.
+
+JSON Format Examples:
 {"action_type": "classify", "email_id": "email_001", "category": "billing_issue"}
 {"action_type": "set_priority", "email_id": "email_001", "priority": "high"}
 {"action_type": "route", "email_id": "email_001", "team": "finance"}
 {"action_type": "archive", "email_id": "email_003"}
 {"action_type": "escalate", "email_id": "email_005"}
-"""
+{"action_type": "read_thread", "email_id": "email_002"}"""
 
 def _decide_next_action_heuristic(obs):
     """Deterministic fallback: process emails through the multi-step pipeline."""
@@ -59,7 +69,10 @@ def _decide_next_action_heuristic(obs):
     # Priority 1: Advance in-progress emails to completion
     for ep in obs.get("in_progress", []):
         eid = ep["id"]
-        text = (ep.get("subject", "") + " " + ep.get("body", "") + " " + str(ep.get("thread_context", ""))).lower()
+        body = ep.get("body") or ""
+        subject = ep.get("subject") or ""
+        thread_ctx = ep.get("thread_context") or ""
+        text = (subject + " " + body + " " + str(thread_ctx)).lower()
         
         if not ep.get("priority_set"):
             # Needs priority
@@ -94,7 +107,10 @@ def _decide_next_action_heuristic(obs):
         if e.get("thread_id") and not e.get("thread_read"):
             return {"action_type": "read_thread", "email_id": eid}
             
-        text = (e.get("subject", "") + " " + e.get("body", "") + " " + str(e.get("thread_context", ""))).lower()
+        body = e.get("body") or ""
+        subject = e.get("subject") or ""
+        thread_ctx = e.get("thread_context") or ""
+        text = (subject + " " + body + " " + str(thread_ctx)).lower()
         
         # Simple heuristics for category
         if "invoice" in text or "billing" in text or "charge" in text or "refund" in text or "payment" in text:
@@ -139,13 +155,13 @@ def run_task(task_id: str, verbose: bool = False) -> float:
     while not (done or truncated):
         step_count += 1
         
-        # Build prompt
+        # Build prompt - SAFE SLICING WITH (val or '')[:n] PATTERN
         inbox_text = "\n\n".join([
             f"Email [ID: {e['id']}]\n"
             f"From: {e['sender']}\n"
-            f"Subject: {e['subject']}\n"
-            f"Body: {e['body'][:150]}...\n"
-            + (f"Thread Context: {e.get('thread_context')[:200]}...\n" if e.get('thread_context') else "")
+            f"Subject: {(e.get('subject') or '')[:100]}\n"
+            f"Body: {(e.get('body') or '')[:150]}...\n"
+            + (f"Thread Context: {(e.get('thread_context') or '')[:200]}...\n" if e.get('thread_context') else "")
             + f"Thread: {e.get('thread_id', 'none')}"
             + (f" (thread {'READ' if e.get('thread_read') else 'UNREAD — must read_thread first'})" if e.get('thread_id') else "")
             for e in obs['inbox'][:5]
@@ -153,11 +169,12 @@ def run_task(task_id: str, verbose: bool = False) -> float:
         
         in_progress_text = "\n\n".join([
             f"In-Progress [ID: {e['id']}]\n"
-            f"Subject: {e.get('subject', '')}\n"
-            f"Body/Thread Context: {e.get('body', '')[:50]}... {e.get('thread_context', '')[:50]}\n"
+            f"Subject: {(e.get('subject') or '')[:100]}\n"
+            f"Body/Thread Context: {(e.get('body') or '')[:50]}... {(e.get('thread_context') or '')[:50]}\n"
             f"Category: {e.get('category_set', 'NOT SET')}\n"
             f"Priority: {'SET' if e.get('priority_set') else 'NOT SET'}\n"
-            f"Disposition: {e.get('disposition', 'PENDING')}"
+            f"Disposition: {e.get('disposition', 'PENDING')}\n"
+            f"NEXT ACTION NEEDED: {'set_priority' if not e.get('priority_set') else ('route/archive/escalate' if e.get('category_set') else 'classify')}"
             for e in obs.get('in_progress', [])[:5]
         ])
         
@@ -176,38 +193,83 @@ Step {obs['current_step']}/{obs['max_steps']}
 Fully processed: {obs['processed_count']}
 SLA violations: {obs['sla_violations']}
 
-Choose ONE action (JSON only):"""
+Choose ONE action. Respond with VALID JSON ONLY - no explanation, no markdown, just the JSON object."""
         
         # Call LLM
         used_method = "Unknown"
         try:
-            if 'client' in globals():
+            if client is not None:
                 used_method = "LLM"
+                # NVIDIA API doesn't support system role, so include system prompt in user message
+                full_prompt = f"{SYSTEM_PROMPT}\n\n{user_prompt}"
                 completion = client.chat.completions.create(
                     model=MODEL_NAME,
                     messages=[
-                        {"role": "user", "content": f"{SYSTEM_PROMPT}\n\n{user_prompt}"}
+                        {"role": "user", "content": full_prompt}
                     ],
-                    temperature=0.3,
-                    max_tokens=200,
-                    #timeout=5.5  # Strict timeout limit to ensure <20m total runtime
+                    temperature=0.2,
+                    max_tokens=256,
                 )
                 
                 response_text = completion.choices[0].message.content.strip()
-                # Try to extract just the valid JSON dictionary if LLM adds padding
-                match = re.search(r'\{.*?\}', response_text, re.DOTALL)
-                if match:
-                    action = json.loads(match.group(0))
-                else:
+                
+                # More robust JSON extraction
+                action = None
+                
+                # Try 1: Direct JSON parse
+                try:
                     action = json.loads(response_text)
+                except json.JSONDecodeError:
+                    pass
+                
+                # Try 2: If response looks like JSON content without braces, wrap it
+                if action is None and '"action_type"' in response_text:
+                    try:
+                        wrapped = "{" + response_text + "}"
+                        action = json.loads(wrapped)
+                    except json.JSONDecodeError:
+                        pass
+                
+                # Try 3: Extract JSON object with proper bracket matching
+                if action is None:
+                    start_idx = response_text.find('{')
+                    if start_idx != -1:
+                        # Find matching closing brace
+                        brace_count = 0
+                        for i in range(start_idx, len(response_text)):
+                            if response_text[i] == '{':
+                                brace_count += 1
+                            elif response_text[i] == '}':
+                                brace_count -= 1
+                                if brace_count == 0:
+                                    json_str = response_text[start_idx:i+1]
+                                    try:
+                                        action = json.loads(json_str)
+                                    except json.JSONDecodeError:
+                                        pass
+                                    break
+                
+                # Try 4: Use regex as last resort
+                if action is None:
+                    match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text)
+                    if match:
+                        try:
+                            action = json.loads(match.group(0))
+                        except json.JSONDecodeError:
+                            pass
+                
+                if action is None:
+                    raise ValueError(f"Could not extract valid JSON from response: {response_text[:100]}")
+                    
             else:
                 used_method = "Heuristic (no client)"
                 # Deterministic heuristic fallback
                 action = _decide_next_action_heuristic(obs)
             
         except Exception as e:
-            print(f"LLM error: {e}")
-            used_method = "Heuristic (fallback due to error)"
+            if verbose:
+                print(f"  [JSON parse error: {e}]")
+            used_method = "Heuristic (fallback due to LLM error)"
             action = _decide_next_action_heuristic(obs)
         
         # Execute step

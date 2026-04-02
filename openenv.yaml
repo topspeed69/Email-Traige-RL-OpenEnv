@@ -1,7 +1,7 @@
 name: email-triage-env
 version: 1.0.0
 description: Email inbox management with multi-category classification, prioritization, and SLA compliance
-author: Your Name
+author: Mendole Vinay Siddhaling
 license: MIT
 
 observation_space:
