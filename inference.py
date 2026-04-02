@@ -133,9 +133,7 @@ def _decide_next_action_heuristic(obs):
 
 def run_task(task_id: str, verbose: bool = False) -> float:
     """Run inference on one task"""
-    print(f"\n{'='*50}")
-    print(f"Running task: {task_id}")
-    print(f"{'='*50}\n")
+    print(f"[START] task_id: {task_id}")
     
     # Reset
     try:
@@ -276,7 +274,7 @@ Choose ONE action. Respond with VALID JSON ONLY - no explanation, no markdown, j
         resp = requests.post(f"{ENV_URL}/step", json=action)
         
         if resp.status_code != 200:
-            print(f"Action rejected (Status {resp.status_code}): {resp.text}")
+            if verbose: print(f"Action rejected (Status {resp.status_code}): {resp.text}")
             used_method = "Heuristic (fallback due to rejection)"
             action = _decide_next_action_heuristic(obs)
             resp = requests.post(f"{ENV_URL}/step", json=action)
@@ -292,9 +290,9 @@ Choose ONE action. Respond with VALID JSON ONLY - no explanation, no markdown, j
         if len(action_history) > 3:
             action_history.pop(0)
         
-        log_msg = f"Step {step_count}: {action['action_type']:15s} on {action.get('email_id', 'N/A'):12s} -> reward: {reward:+.2f}"
+        log_msg = f"[STEP] action: {action.get('action_type')} | email: {action.get('email_id', 'N/A')} | reward: {reward:+.2f}"
         if verbose:
-            log_msg += f" [{used_method}]"
+            log_msg += f" | method: {used_method}"
         print(log_msg)
         
         if step_count > 500:  # Safety break (higher due to multi-step)
@@ -303,7 +301,7 @@ Choose ONE action. Respond with VALID JSON ONLY - no explanation, no markdown, j
         final_score = result['info'].get('final_score', 0.0)
     
     emails_done = result['info'].get('emails_done', 0)
-    print(f"\nTask complete! Emails fully done: {emails_done} | Final score: {final_score:.3f}\n")
+    print(f"[END] task_id: {task_id} | final_score: {final_score:.3f} | emails_processed: {emails_done}")
     
     return final_score
 

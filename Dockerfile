@@ -16,8 +16,7 @@ ENV PATH="/app/.venv/bin:$PATH"
 ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # Synchronize everything (installs dependencies from uv.lock)
-# No-editable ensures it's more production-like
-RUN uv sync --frozen --no-editable
+RUN uv sync --frozen
 
 # Use the virtualenv's uvicorn module directly
-CMD ["uv", "run", "uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uv", "run", "uvicorn", "server.app:app", "--host", "0.0.0.0", "--port", "7860"]

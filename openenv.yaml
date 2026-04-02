@@ -26,12 +26,18 @@ action_space:
   properties:
     action_type:
       type: string
-      enum: [classify, route, archive, escalate, read_thread, skip]
+      enum: [classify, route, archive, escalate, read_thread, skip, set_priority]
     email_id:
       type: string
     category:
       type: string
       enum: [spam, billing_issue, technical_support, meeting_request, sales_inquiry, urgent_escalation, general_info, internal]
+    priority:
+      type: string
+      enum: [high, medium, low]
+    team:
+      type: string
+      enum: [engineering, finance, sales, support]
 
 tasks:
   - id: easy

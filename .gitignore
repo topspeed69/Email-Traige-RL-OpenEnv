@@ -30,3 +30,6 @@ eggs/
 .DS_Store
 *.swp
 *~
+
+
+script.sh
