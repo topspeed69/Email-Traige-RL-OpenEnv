@@ -10,14 +10,18 @@ from openai import OpenAI
 load_dotenv()
 
 # Environment variables (required)
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-API_KEY = os.getenv("HF_TOKEN")
-MODEL_NAME = os.getenv("MODEL_NAME")
+API_BASE_URL = os.getenv("API_BASE_URL", "https://integrate.api.nvidia.com/v1")
+MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/mistral-7b-instruct-v0.2")
+HF_TOKEN = os.getenv("HF_TOKEN")
+LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
 ENV_URL = "http://localhost:8000"  # FastAPI default port or change to match your deployment
 
 # Check if we should use local LLM API for test
-if not API_KEY and not API_BASE_URL:
+# Per Phase 2 deep validation feedback, LiteLLM proxy uses API_KEY
+API_KEY = os.environ.get("API_KEY", HF_TOKEN)
+
+if not API_KEY:
     client = None
 else:
     client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)

@@ -105,7 +105,7 @@ The repository includes a baseline inference script utilizing the OpenAI API spe
 ```bash
 export API_BASE_URL="https://api.openai.com/v1"  # Or another compatible proxy
 export MODEL_NAME="gpt-4o"
-export OPENAI_API_KEY="your_openai_api_key_here"
+export API_KEY="your_openai_api_key_here"
 # OR alternatively:
 # export HF_TOKEN="your_hf_token_here"
 
