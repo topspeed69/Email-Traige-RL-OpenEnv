@@ -130,34 +130,14 @@ medium    : 0.527
 hard      : 0.584
 ```
 
-### microsoft/phi3.5 (3.58b) [ollama]
-```text
-==================================================
-BASELINE RESULTS		Time: 15:24
-==================================================
-easy      : 0.394
-medium    : 0.516
-hard      : 0.257
-```
-
-### 8b model (nvidia/llama3-chatqa-1.5-8b)
-```text
-==================================================
-BASELINE RESULTS                               Time: 11:14
-==================================================
-easy      : 0.294
-medium    : 0.364
-hard      : 0.409
-```
-
 ### Mistral LLM (mistral-small-3.1-24b-instruct-2503)
 ```text
 ==================================================
 BASELINE RESULTS		Time: 09:46
 ==================================================
-easy      : 0.774
-medium    : 0.617
-hard      : 0.699
+easy      : 0.442
+medium    : 0.542
+hard      : 0.584
 ```
 
 ### Llama 3.1 70b (abacusai/dracarys-llama-3.1-70b-instruct)

@@ -147,6 +147,10 @@ class EmailTriageEnv:
         """Set category ONLY. Checks dependency (thread must be read first)."""
         if not action.category:
             return self._base_reward(action_cost=-0.02), "classify requires 'category' field"
+            
+        valid_cats = [e.value for e in EmailCategory]
+        if action.category not in valid_cats:
+            return self._base_reward(action_cost=-0.5), f"Invalid category: {action.category}. Must be one of {valid_cats}"
         
         prog = self._get_or_create_progress(email.id)
         
@@ -183,13 +187,13 @@ class EmailTriageEnv:
             EmailCategory.INTERNAL: 0.8,
         }
         
-        if action.category == email.true_category:
+        if action.category == email.true_category.value:
             cat_reward = CATEGORY_WEIGHTS[email.true_category]
         else:
             cat_reward = -1.0
         
         # Record
-        prog.category = action.category
+        prog.category = EmailCategory(action.category)
         prog.classified_step = self.current_step
         
         return Reward(
@@ -204,6 +208,10 @@ class EmailTriageEnv:
         """Set priority ONLY. Must classify first."""
         if not action.priority:
             return self._base_reward(action_cost=-0.02), "set_priority requires 'priority' field"
+            
+        valid_priorities = ["high", "medium", "low"]
+        if action.priority not in valid_priorities:
+            return self._base_reward(action_cost=-0.5), f"Invalid priority: {action.priority}. Must be one of {valid_priorities}"
         
         prog = self._get_or_create_progress(email.id)
         
@@ -240,6 +248,10 @@ class EmailTriageEnv:
         """Route to a team. Terminal action. Must have category + priority first."""
         if not action.team:
             return self._base_reward(action_cost=-0.02), "route requires 'team' field"
+            
+        valid_teams = ["engineering", "finance", "sales", "support"]
+        if action.team not in valid_teams:
+            return self._base_reward(action_cost=-0.5), f"Invalid team: {action.team}. Must be one of {valid_teams}"
         
         prog = self._get_or_create_progress(email.id)
         

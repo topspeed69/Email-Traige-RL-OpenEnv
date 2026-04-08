@@ -1,32 +1,94 @@
+"""
+Inference Script — Email Triage RL Environment
+===================================
+MANDATORY
+- API_BASE_URL, MODEL_NAME, HF_TOKEN environment variables
+- Optional: LOCAL_IMAGE_NAME when using from_docker_image()
+- OpenAI client for all LLM calls
+- Stdout follows required [START]/[STEP]/[END] format
+"""
+
+import asyncio
 import os
 import json
 import re
-import requests
-import argparse
-from dotenv import load_dotenv
+from typing import List, Optional, Dict, Any
+
 from openai import OpenAI
+from openenv.core import EnvClient
+from openenv.core.client_types import StepResult
 
-# Load environment variables from .env file
-load_dotenv()
-
-# Environment variables (required)
-API_BASE_URL = os.getenv("API_BASE_URL", "https://integrate.api.nvidia.com/v1")
-MODEL_NAME = os.getenv("MODEL_NAME", "mistralai/mistral-7b-instruct-v0.2")
-HF_TOKEN = os.getenv("HF_TOKEN")
+# ── Environment variables (matching sample inference.py exactly) ──────────
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
+API_BASE_URL = os.getenv("API_BASE_URL") or "https://integrate.api.nvidia.com/v1"
+MODEL_NAME = os.getenv("MODEL_NAME") or "mistralai/mistral-7b-instruct-v0.2"
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
 
-ENV_URL = "http://localhost:8000"  # FastAPI default port or change to match your deployment
+BENCHMARK = "email-triage-env"
+MAX_STEPS = 500
 
-# Check if we should use local LLM API for test
-# Per Phase 2 deep validation feedback, LiteLLM proxy uses API_KEY
-API_KEY = os.environ.get("API_KEY", HF_TOKEN)
 
-if not API_KEY:
-    client = None
-else:
-    client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+# ── Minimal OpenEnv client (avoids relative-import issues) ────────────────
+class EmailEnvClient(EnvClient[dict, dict, dict]):
+    """Thin OpenEnv client that keeps observations as plain dicts."""
 
-SYSTEM_PROMPT = """You are an email triage AI. You make ONE atomic action per step.
+    def __init__(self, *args: Any, **kwargs: Any):
+        super().__init__(*args, **kwargs)
+        self.last_info: Dict[str, Any] = {}
+
+    def _step_payload(self, action: dict) -> dict:
+        return action
+
+    def _parse_result(self, payload: dict) -> StepResult[dict]:
+        obs = payload.get("observation", {})
+        reward_data = payload.get("reward", {})
+        reward = (
+            reward_data.get("total", 0.0)
+            if isinstance(reward_data, dict)
+            else float(reward_data or 0)
+        )
+        self.last_info = payload.get("info", {})
+        return StepResult(
+            observation=obs,
+            reward=reward,
+            done=payload.get("done", False) or payload.get("truncated", False),
+        )
+
+    def _parse_state(self, payload: dict) -> dict:
+        return payload
+
+
+# ── Required stdout helpers ───────────────────────────────────────────────
+def log_start(task: str, env: str, model: str) -> None:
+    print(f"[START] task={task} env={env} model={model}", flush=True)
+
+
+def log_step(
+    step: int, action: str, reward: float, done: bool, error: Optional[str]
+) -> None:
+    error_val = error if error else "null"
+    done_val = str(done).lower()
+    print(
+        f"[STEP] step={step} action={action} reward={reward:.2f} "
+        f"done={done_val} error={error_val}",
+        flush=True,
+    )
+
+
+def log_end(
+    success: bool, steps: int, score: float, rewards: List[float]
+) -> None:
+    rewards_str = ",".join(f"{r:.2f}" for r in rewards)
+    print(
+        f"[END] success={str(success).lower()} steps={steps} "
+        f"score={score:.3f} rewards={rewards_str}",
+        flush=True,
+    )
+
+
+# ── System prompt ─────────────────────────────────────────────────────────
+SYSTEM_PROMPT = """\
+You are an email triage AI. You make ONE atomic action per step.
 
 Available action types:
   - read_thread   : Read thread context (required before classifying threaded emails)
@@ -67,259 +129,266 @@ JSON Format Examples:
 {"action_type": "escalate", "email_id": "email_005"}
 {"action_type": "read_thread", "email_id": "email_002"}"""
 
-def _decide_next_action_heuristic(obs):
+
+# ── Heuristic fallback ───────────────────────────────────────────────────
+def _decide_next_action_heuristic(obs: dict) -> dict:
     """Deterministic fallback: process emails through the multi-step pipeline."""
-    
-    # Priority 1: Advance in-progress emails to completion
     for ep in obs.get("in_progress", []):
         eid = ep["id"]
-        body = ep.get("body") or ""
-        subject = ep.get("subject") or ""
-        thread_ctx = ep.get("thread_context") or ""
-        text = (subject + " " + body + " " + str(thread_ctx)).lower()
-        
+        text = (
+            (ep.get("subject") or "")
+            + " " + (ep.get("body") or "")
+            + " " + str(ep.get("thread_context") or "")
+        ).lower()
+
         if not ep.get("priority_set"):
-            # Needs priority
-            priority = "high" if "asap" in text or "urgent" in text else "medium"
+            priority = "high" if ("asap" in text or "urgent" in text) else "medium"
             return {"action_type": "set_priority", "email_id": eid, "priority": priority}
-            
-        # Has category + priority, needs terminal action
+
         cat = ep.get("category_set", "")
         if cat in ("spam", "general_info"):
             return {"action_type": "archive", "email_id": eid}
-        elif cat == "urgent_escalation":
+        if cat == "urgent_escalation":
             return {"action_type": "escalate", "email_id": eid}
-        else:
-            # Route based on category
-            team_map = {
-                "billing_issue": "finance",
-                "technical_support": "engineering",
-                "meeting_request": "support",
-                "sales_inquiry": "sales",
-                "internal": "support",
-            }
-            team = team_map.get(cat, "support")
-            return {"action_type": "route", "email_id": eid, "team": team}
-    
-    # Priority 2: Start classifying new inbox emails
+        team_map = {
+            "billing_issue": "finance",
+            "technical_support": "engineering",
+            "meeting_request": "support",
+            "sales_inquiry": "sales",
+            "internal": "support",
+        }
+        return {"action_type": "route", "email_id": eid, "team": team_map.get(cat, "support")}
+
     inbox = obs.get("inbox", [])
     if inbox:
         e = inbox[0]
         eid = e["id"]
-        
-        # If threaded and thread NOT yet read, read it first
         if e.get("thread_id") and not e.get("thread_read"):
             return {"action_type": "read_thread", "email_id": eid}
-            
-        body = e.get("body") or ""
-        subject = e.get("subject") or ""
-        thread_ctx = e.get("thread_context") or ""
-        text = (subject + " " + body + " " + str(thread_ctx)).lower()
-        
-        # Simple heuristics for category
-        if "invoice" in text or "billing" in text or "charge" in text or "refund" in text or "payment" in text:
+        text = (
+            (e.get("subject") or "")
+            + " " + (e.get("body") or "")
+            + " " + str(e.get("thread_context") or "")
+        ).lower()
+        if any(w in text for w in ("invoice", "billing", "charge", "refund", "payment")):
             category = "billing_issue"
-        elif "asap" in text or "urgent" in text:
+        elif any(w in text for w in ("asap", "urgent")):
             category = "urgent_escalation"
-        elif "crash" in text or "error" in text or "failing" in text or "bug" in text:
+        elif any(w in text for w in ("crash", "error", "failing", "bug")):
             category = "technical_support"
-        elif "meeting" in text or "sync" in text or "call" in text:
+        elif any(w in text for w in ("meeting", "sync", "call")):
             category = "meeting_request"
-        elif "quote" in text or "pricing" in text or "sales" in text or "enterprise" in text:
+        elif any(w in text for w in ("quote", "pricing", "sales", "enterprise")):
             category = "sales_inquiry"
         else:
             category = "general_info"
-            
         return {"action_type": "classify", "email_id": eid, "category": category}
-    
+
     return {"action_type": "skip", "email_id": "none"}
 
 
-def run_task(task_id: str, verbose: bool = False) -> float:
-    """Run inference on one task"""
-    print(f"[START] task_id: {task_id}")
-    
-    # Reset
+# ── JSON extraction helpers ──────────────────────────────────────────────
+def _extract_json(text: str) -> Optional[dict]:
+    """Try multiple strategies to extract JSON from LLM response."""
+    # Try 1: Direct parse
     try:
-        resp = requests.post(f"{ENV_URL}/reset", params={"task_id": task_id})
-        resp.raise_for_status()
-        obs = resp.json()
-    except Exception as e:
-        print(f"Failed to connect to environment server: {e}")
-        return 0.0
-    
-    done = False
-    truncated = False
-    step_count = 0
-    final_score = 0.0
-    action_history = []
-    
-    while not (done or truncated):
-        step_count += 1
-        
-        # Build prompt - SAFE SLICING WITH (val or '')[:n] PATTERN
-        inbox_text = "\n\n".join([
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+    # Try 2: Find first {...} block
+    start = text.find("{")
+    if start != -1:
+        depth = 0
+        for i in range(start, len(text)):
+            if text[i] == "{":
+                depth += 1
+            elif text[i] == "}":
+                depth -= 1
+                if depth == 0:
+                    try:
+                        return json.loads(text[start : i + 1])
+                    except json.JSONDecodeError:
+                        break
+    # Try 3: Regex
+    match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", text)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            pass
+    return None
+
+
+# ── LLM action selection ─────────────────────────────────────────────────
+def get_llm_action(
+    llm_client: OpenAI, obs: dict, action_history: List[str], verbose: bool = False
+) -> tuple[dict, str]:
+    """Call the LLM for the next action. Returns (action_dict, method_label)."""
+
+    inbox_text = "\n\n".join(
+        [
             f"Email [ID: {e['id']}]\n"
             f"From: {e['sender']}\n"
             f"Subject: {(e.get('subject') or '')[:100]}\n"
             f"Body: {(e.get('body') or '')[:150]}...\n"
-            + (f"Thread Context: {(e.get('thread_context') or '')[:200]}...\n" if e.get('thread_context') else "")
+            + (
+                f"Thread Context: {(e.get('thread_context') or '')[:200]}...\n"
+                if e.get("thread_context")
+                else ""
+            )
             + f"Thread: {e.get('thread_id', 'none')}"
-            + (f" (thread {'READ' if e.get('thread_read') else 'UNREAD — must read_thread first'})" if e.get('thread_id') else "")
-            for e in obs['inbox'][:5]
-        ])
-        
-        in_progress_text = "\n\n".join([
+            + (
+                f" (thread {'READ' if e.get('thread_read') else 'UNREAD — must read_thread first'})"
+                if e.get("thread_id")
+                else ""
+            )
+            for e in obs.get("inbox", [])[:5]
+        ]
+    )
+
+    in_progress_text = "\n\n".join(
+        [
             f"In-Progress [ID: {e['id']}]\n"
             f"Subject: {(e.get('subject') or '')[:100]}\n"
-            f"Body/Thread Context: {(e.get('body') or '')[:50]}... {(e.get('thread_context') or '')[:50]}\n"
             f"Category: {e.get('category_set', 'NOT SET')}\n"
             f"Priority: {'SET' if e.get('priority_set') else 'NOT SET'}\n"
             f"Disposition: {e.get('disposition', 'PENDING')}\n"
-            f"NEXT ACTION NEEDED: {'set_priority' if not e.get('priority_set') else ('route/archive/escalate' if e.get('category_set') else 'classify')}"
-            for e in obs.get('in_progress', [])[:5]
-        ])
-        
-        user_prompt = f"""Inbox ({len(obs['inbox'])} unread):
+            f"NEXT: {'set_priority' if not e.get('priority_set') else 'route/archive/escalate'}"
+            for e in obs.get("in_progress", [])[:5]
+        ]
+    )
 
-{inbox_text}
+    user_prompt = (
+        f"Inbox ({len(obs.get('inbox', []))} unread):\n\n{inbox_text}\n\n"
+        f"In-Progress ({len(obs.get('in_progress', []))} emails):\n\n{in_progress_text}\n\n"
+        f"Recent Actions: {', '.join(action_history[-3:]) if action_history else 'None'}\n"
+        f"Step {obs['current_step']}/{obs['max_steps']}\n"
+        f"Fully processed: {obs['processed_count']}\n"
+        f"SLA violations: {obs['sla_violations']}\n\n"
+        f"Choose ONE action. Respond with VALID JSON ONLY."
+    )
 
-In-Progress ({len(obs.get('in_progress', []))} emails):
-
-{in_progress_text}
-
-Recent Actions:
-{', '.join(action_history[-3:]) if action_history else 'None'}
-
-Step {obs['current_step']}/{obs['max_steps']}
-Fully processed: {obs['processed_count']}
-SLA violations: {obs['sla_violations']}
-
-Choose ONE action. Respond with VALID JSON ONLY - no explanation, no markdown, just the JSON object."""
-        
-        # Call LLM
-        used_method = "Unknown"
-        try:
-            if client is not None:
-                used_method = "LLM"
-                # NVIDIA API doesn't support system role, so include system prompt in user message
-                full_prompt = f"{SYSTEM_PROMPT}\n\n{user_prompt}"
-                completion = client.chat.completions.create(
-                    model=MODEL_NAME,
-                    messages=[
-                        {"role": "user", "content": full_prompt}
-                    ],
-                    temperature=0.2,
-                    max_tokens=256,
-                )
-                
-                response_text = completion.choices[0].message.content.strip()
-                
-                # More robust JSON extraction
-                action = None
-                
-                # Try 1: Direct JSON parse
-                try:
-                    action = json.loads(response_text)
-                except json.JSONDecodeError:
-                    pass
-                
-                # Try 2: If response looks like JSON content without braces, wrap it
-                if action is None and '"action_type"' in response_text:
-                    try:
-                        wrapped = "{" + response_text + "}"
-                        action = json.loads(wrapped)
-                    except json.JSONDecodeError:
-                        pass
-                
-                # Try 3: Extract JSON object with proper bracket matching
-                if action is None:
-                    start_idx = response_text.find('{')
-                    if start_idx != -1:
-                        # Find matching closing brace
-                        brace_count = 0
-                        for i in range(start_idx, len(response_text)):
-                            if response_text[i] == '{':
-                                brace_count += 1
-                            elif response_text[i] == '}':
-                                brace_count -= 1
-                                if brace_count == 0:
-                                    json_str = response_text[start_idx:i+1]
-                                    try:
-                                        action = json.loads(json_str)
-                                    except json.JSONDecodeError:
-                                        pass
-                                    break
-                
-                # Try 4: Use regex as last resort
-                if action is None:
-                    match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', response_text)
-                    if match:
-                        try:
-                            action = json.loads(match.group(0))
-                        except json.JSONDecodeError:
-                            pass
-                
-                if action is None:
-                    raise ValueError(f"Could not extract valid JSON from response: {response_text[:100]}")
-                    
-            else:
-                used_method = "Heuristic (no client)"
-                # Deterministic heuristic fallback
-                action = _decide_next_action_heuristic(obs)
-            
-        except Exception as e:
-            if verbose:
-                print(f"  [JSON parse error: {e}]")
-            used_method = "Heuristic (fallback due to LLM error)"
-            action = _decide_next_action_heuristic(obs)
-        
-        # Execute step
-        resp = requests.post(f"{ENV_URL}/step", json=action)
-        
-        if resp.status_code != 200:
-            if verbose: print(f"Action rejected (Status {resp.status_code}): {resp.text}")
-            used_method = "Heuristic (fallback due to rejection)"
-            action = _decide_next_action_heuristic(obs)
-            resp = requests.post(f"{ENV_URL}/step", json=action)
-
-        result = resp.json()
-        
-        obs = result['observation']
-        reward = result['reward']['total']
-        done = result['done']
-        truncated = result['truncated']
-        
-        action_history.append(f"{action.get('action_type', 'unknown')} on {action.get('email_id', 'N/A')}")
-        if len(action_history) > 3:
-            action_history.pop(0)
-        
-        log_msg = f"[STEP] action: {action.get('action_type')} | email: {action.get('email_id', 'N/A')} | reward: {reward:+.2f}"
+    try:
+        full_prompt = f"{SYSTEM_PROMPT}\n\n{user_prompt}"
+        completion = llm_client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[{"role": "user", "content": full_prompt}],
+            temperature=0.2,
+            max_tokens=256,
+        )
+        response_text = (completion.choices[0].message.content or "").strip()
+        action = _extract_json(response_text)
+        if action is None:
+            raise ValueError(f"No valid JSON: {response_text[:100]}")
+        return action, "LLM"
+    except Exception as e:
         if verbose:
-            log_msg += f" | method: {used_method}"
-        print(log_msg)
-        
-        if step_count > 500:  # Safety break (higher due to multi-step)
-            break
+            print(f"  [DEBUG] LLM error: {e}", flush=True)
+        return _decide_next_action_heuristic(obs), "Heuristic(fallback)"
+
+
+# ── Single task runner ────────────────────────────────────────────────────
+async def run_task(
+    env: EmailEnvClient, llm_client: OpenAI, task_id: str, verbose: bool = False
+) -> float:
+    log_start(task=task_id, env=BENCHMARK, model=MODEL_NAME)
+
+    rewards: List[float] = []
+    steps_taken = 0
+    score = 0.0
+    success = False
+
+    try:
+        result = await env.reset(task_id=task_id)
+        obs = result.observation
+        action_history: List[str] = []
+
+        for step in range(1, MAX_STEPS + 1):
+            if result.done:
+                break
+
+            action, method = get_llm_action(llm_client, obs, action_history, verbose)
+
+            try:
+                result = await env.step(action)
+                error_from_obs = result.observation.get("last_action_error")
+                if error_from_obs and method == "LLM":
+                    raise ValueError(f"Action rejected by env: {error_from_obs}")
+            except Exception as e:
+                # Pydantic validation errors or env rejections trigger heuristic fallback
+                if method == "LLM":
+                    if verbose:
+                        print(f"  [DEBUG] LLM action invalid, falling back. Error: {e}", flush=True)
+                    action = _decide_next_action_heuristic(obs)
+                    result = await env.step(action)
+                else:
+                    raise e
             
-        final_score = result['info'].get('final_score', 0.0)
-    
-    emails_done = result['info'].get('emails_done', 0)
-    print(f"[END] task_id: {task_id} | final_score: {final_score:.3f} | emails_processed: {emails_done}")
-    
-    return final_score
+            obs = result.observation
+            reward = result.reward or 0.0
+            done = result.done
+            error = obs.get("last_action_error")
+            
+            rewards.append(reward)
+            steps_taken = step
+
+            action_str = f"{action.get('action_type', 'unknown')}({action.get('email_id', 'N/A')})"
+            log_step(step=step, action=action_str, reward=reward, done=done, error=error)
+
+            action_history.append(action_str)
+            if len(action_history) > 3:
+                action_history.pop(0)
+
+            if done:
+                break
+
+        # Prefer server-computed final_score; fall back to reward-based
+        final_score = env.last_info.get("final_score", None)
+        if final_score is not None:
+            score = float(final_score)
+        elif rewards:
+            score = max(sum(rewards) / len(rewards), 0.0)
+        score = min(max(score, 0.0), 1.0)
+        success = score > 0.1
+
+    except Exception as e:
+        print(f"[DEBUG] Task error: {e}", flush=True)
+
+    finally:
+        log_end(success=success, steps=steps_taken, score=score, rewards=rewards)
+
+    return score
+
+
+# ── Main ──────────────────────────────────────────────────────────────────
+async def main() -> None:
+    # Create OpenAI LLM client using injected proxy vars
+    llm_client = OpenAI(base_url=API_BASE_URL, api_key=API_KEY)
+
+    # Create environment client
+    if LOCAL_IMAGE_NAME:
+        env = await EmailEnvClient.from_docker_image(LOCAL_IMAGE_NAME)
+    else:
+        env_url = os.getenv("ENV_URL", "http://localhost:8000")
+        env = EmailEnvClient(base_url=env_url)
+        await env.connect()
+
+    try:
+        scores: dict[str, float] = {}
+        for task in ["easy", "medium", "hard"]:
+            scores[task] = await run_task(env, llm_client, task)
+
+        print("\n" + "=" * 50)
+        print("BASELINE RESULTS")
+        print("=" * 50)
+        for task, s in scores.items():
+            print(f"{task:10s}: {s:.3f}")
+    finally:
+        try:
+            await env.close()
+        except Exception as e:
+            print(f"[DEBUG] env.close() error: {e}", flush=True)
+
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Run email triage inference")
-    parser.add_argument("--verbose", action="store_true", help="Print verbose logs, including whether LLM or Heuristic is used")
-    args = parser.parse_args()
-
-    scores = {}
-    for task in ["easy", "medium", "hard"]:
-        scores[task] = run_task(task, verbose=args.verbose)
-    
-    print("\n" + "="*50)
-    print("BASELINE RESULTS")
-    print("="*50)
-    for task, score in scores.items():
-        print(f"{task:10s}: {score:.3f}")
+    asyncio.run(main())

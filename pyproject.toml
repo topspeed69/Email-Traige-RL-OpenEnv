@@ -15,8 +15,12 @@ dependencies = [
     "pydantic",
     "uvicorn",
     "scikit-learn",
-    "python-dotenv>=1.2.2",
+    "openai",
+    "requests",
 ]
 
 [project.scripts]
 server = "server.app:main"
+
+[tool.setuptools.packages.find]
+include = ["server*"]

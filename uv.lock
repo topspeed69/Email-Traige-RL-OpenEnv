@@ -489,9 +489,10 @@ version = "1.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "fastapi" },
+    { name = "openai" },
     { name = "openenv-core" },
     { name = "pydantic" },
-    { name = "python-dotenv" },
+    { name = "requests" },
     { name = "scikit-learn" },
     { name = "uvicorn" },
 ]
@@ -499,9 +500,10 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "fastapi" },
+    { name = "openai" },
     { name = "openenv-core" },
     { name = "pydantic" },
-    { name = "python-dotenv", specifier = ">=1.2.2" },
+    { name = "requests" },
     { name = "scikit-learn" },
     { name = "uvicorn" },
 ]

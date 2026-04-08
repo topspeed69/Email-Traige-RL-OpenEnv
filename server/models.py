@@ -67,22 +67,16 @@ class Observation(BaseModel):
 
 class Action(BaseModel):
     """Agent's action — one atomic operation per step"""
-    action_type: Literal[
-        "read_thread",    # Inspect a thread (prerequisite for threaded emails)
-        "classify",       # Set category ONLY
-        "set_priority",   # Set priority ONLY
-        "route",          # Terminal: route to a team
-        "archive",        # Terminal: archive the email
-        "escalate",       # Terminal: escalate the email
-        "skip"            # Do nothing this step
-    ]
+    action_type: str
     email_id: str
+    
+    # Kept as free-form strings to capture LLM hallucinations natively
     # Only used when action_type == "classify"
-    category: Optional[EmailCategory] = None
+    category: Optional[str] = None
     # Only used when action_type == "set_priority"
-    priority: Optional[Literal["high", "medium", "low"]] = None
+    priority: Optional[str] = None
     # Only used when action_type == "route"
-    team: Optional[Literal["engineering", "finance", "sales", "support"]] = None
+    team: Optional[str] = None
 
 class Reward(BaseModel):
     """Reward breakdown"""
