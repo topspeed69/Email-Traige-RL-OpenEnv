@@ -23,6 +23,7 @@ API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 API_BASE_URL = os.getenv("API_BASE_URL") or "https://integrate.api.nvidia.com/v1"
 MODEL_NAME = os.getenv("MODEL_NAME") or "mistralai/mistral-7b-instruct-v0.2"
 LOCAL_IMAGE_NAME = os.getenv("LOCAL_IMAGE_NAME")
+DEFAULT_ENV_URL = "http://localhost:7860"
 
 BENCHMARK = "email-triage-env"
 MAX_STEPS = 500
@@ -35,6 +36,19 @@ class EmailEnvClient(EnvClient[dict, dict, dict]):
     def __init__(self, *args: Any, **kwargs: Any):
         super().__init__(*args, **kwargs)
         self.last_info: Dict[str, Any] = {}
+
+    async def connect(self, max_retries: int = 10, delay: float = 1.0) -> None:
+        """Connect to the environment with retries."""
+        for i in range(max_retries):
+            try:
+                await super().connect()
+                return
+            except Exception as e:
+                if i == max_retries - 1:
+                    print(f"  [ERROR] Failed to connect after {max_retries} attempts: {e}", flush=True)
+                    raise
+                print(f"  [DEBUG] Connection attempt {i+1} failed, retrying in {delay}s...", flush=True)
+                await asyncio.sleep(delay)
 
     def _step_payload(self, action: dict) -> dict:
         return action
@@ -369,7 +383,7 @@ async def main() -> None:
     if LOCAL_IMAGE_NAME:
         env = await EmailEnvClient.from_docker_image(LOCAL_IMAGE_NAME)
     else:
-        env_url = os.getenv("ENV_URL", "http://localhost:8000")
+        env_url = os.getenv("ENV_URL", DEFAULT_ENV_URL)
         env = EmailEnvClient(base_url=env_url)
         await env.connect()
 
