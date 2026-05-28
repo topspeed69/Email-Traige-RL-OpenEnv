@@ -18,6 +18,8 @@ async def reset(task_id: str = "easy") -> Observation:
     except KeyError:
         raise HTTPException(status_code=400, detail=f"Unknown task_id: {task_id}")
 
+from fastapi.encoders import jsonable_encoder
+
 @app.get("/state")
 async def state() -> Dict[str, Any]:
     """Get current state without stepping"""
@@ -25,6 +27,22 @@ async def state() -> Dict[str, Any]:
         "episode_id": env.current_task,
         "step_count": env.current_step
     }
+
+@app.get("/debug_state")
+async def debug_state() -> Dict[str, Any]:
+    """Internal endpoint for Dashboard to access hidden Ground Truth and internal trackers."""
+    return jsonable_encoder({
+        "current_task": env.current_task,
+        "current_step": env.current_step,
+        "max_steps": env.max_steps,
+        "emails": [e.model_dump() for e in env.emails],
+        "progress": {
+            k: {**v.model_dump(), "is_done": v.is_done} 
+            for k, v in env.progress.items()
+        },
+        "processed_count": sum(1 for p in env.progress.values() if p.is_done),
+        "sla_violations": env.sla_violations,
+    })
 
 @app.post("/step")
 async def step(action: Action) -> Dict[str, Any]:

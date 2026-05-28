@@ -17,6 +17,8 @@ dependencies = [
     "scikit-learn",
     "openai",
     "requests",
+    "streamlit>=1.57.0",
+    "plotly>=6.7.0",
 ]
 
 [project.scripts]
